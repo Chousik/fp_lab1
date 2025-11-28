@@ -19,7 +19,8 @@ defmodule Fplab1.MixProject do
 
   defp deps do
     [
-      {:credo, "~> 1.7", only: [:dev, :test], runtime: false}
+      {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
+      {:stream_data, "~> 0.6", only: :test}
     ]
   end
 end

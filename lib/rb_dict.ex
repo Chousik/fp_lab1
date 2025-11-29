@@ -9,7 +9,6 @@ defmodule Fplab1.RBDict do
   @type value :: term()
   @type tree :: nil | {:node, color(), key(), value(), tree(), tree()}
 
-  # --- базовые операции ----------------------------------------------------
 
   @spec new() :: tree()
   def new(), do: nil
@@ -160,7 +159,6 @@ defmodule Fplab1.RBDict do
     end
   end
 
-  # --- вставка -------------------------------------------------------------
 
   defp insert(nil, key, value), do: {:node, :red, key, value, nil, nil}
 
@@ -176,7 +174,6 @@ defmodule Fplab1.RBDict do
     |> balance()
   end
 
-  # --- удаление ------------------------------------------------------------
 
   defp delete_node(nil, _key), do: {nil, false}
 
@@ -266,7 +263,6 @@ defmodule Fplab1.RBDict do
   defp left_left(nil), do: nil
   defp left_left({:node, _c, _k, _v, left, _r}), do: left_child(left)
 
-  # --- балансировка --------------------------------------------------------
 
   defp balance(node) do
     node
@@ -347,7 +343,6 @@ defmodule Fplab1.RBDict do
   defp flip(:red), do: :black
   defp flip(:black), do: :red
 
-  # --- вспомогательные функции --------------------------------------------
 
   defp red?(nil), do: false
   defp red?({:node, color, _k, _v, _l, _r}), do: color == :red

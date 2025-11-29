@@ -9,7 +9,6 @@ defmodule Fplab1.RBDict do
   @type value :: term()
   @type tree :: nil | {:node, color(), key(), value(), tree(), tree()}
 
-
   @spec new() :: tree()
   def new(), do: nil
 
@@ -159,7 +158,6 @@ defmodule Fplab1.RBDict do
     end
   end
 
-
   defp insert(nil, key, value), do: {:node, :red, key, value, nil, nil}
 
   defp insert({:node, color, key, value, left, right}, target_key, target_value) do
@@ -173,7 +171,6 @@ defmodule Fplab1.RBDict do
     {:node, color, key, new_value, new_left, new_right}
     |> balance()
   end
-
 
   defp delete_node(nil, _key), do: {nil, false}
 
@@ -263,7 +260,6 @@ defmodule Fplab1.RBDict do
   defp left_left(nil), do: nil
   defp left_left({:node, _c, _k, _v, left, _r}), do: left_child(left)
 
-
   defp balance(node) do
     node
     |> maybe_rotate_left()
@@ -342,7 +338,6 @@ defmodule Fplab1.RBDict do
 
   defp flip(:red), do: :black
   defp flip(:black), do: :red
-
 
   defp red?(nil), do: false
   defp red?({:node, color, _k, _v, _l, _r}), do: color == :red

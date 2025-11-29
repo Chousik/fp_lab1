@@ -88,7 +88,9 @@ defmodule Fplab1.RBDict do
   @spec foldl(tree(), acc, ({key(), value()}, acc -> acc)) :: acc when acc: term()
   def foldl(tree, acc, fun) do
     case tree do
-      nil -> acc
+      nil ->
+        acc
+
       {:node, _c, key, value, left, right} ->
         acc1 = foldl(left, acc, fun)
         acc2 = fun.({key, value}, acc1)
@@ -99,7 +101,9 @@ defmodule Fplab1.RBDict do
   @spec foldr(tree(), acc, ({key(), value()}, acc -> acc)) :: acc when acc: term()
   def foldr(tree, acc, fun) do
     case tree do
-      nil -> acc
+      nil ->
+        acc
+
       {:node, _c, key, value, left, right} ->
         acc1 = foldr(right, acc, fun)
         acc2 = fun.({key, value}, acc1)
@@ -176,45 +180,70 @@ defmodule Fplab1.RBDict do
 
   defp delete_node(nil, _key), do: {nil, false}
 
-  defp delete_node({:node, _color, key, _value, left, _right} = node, target) do
-    cond do
-      target < key ->
-        node1 =
-          if left != nil and not red?(left) and not red?(left_left(left)) do
-            move_red_left(node)
-          else
-            node
-          end
-
-        {new_left, removed?} = delete_node(left_child(node1), target)
-        {fix_up(set_left(node1, new_left)), removed?}
-
-      true ->
-        node1 = if red?(left), do: rotate_right(node), else: node
-
-        cond do
-          target == node_key(node1) and right_child(node1) == nil ->
-            {nil, true}
-
-          true ->
-            node2 =
-              if right_child(node1) != nil and not red?(right_child(node1)) and not red?(left_left(right_child(node1))) do
-                move_red_right(node1)
-              else
-                node1
-              end
-
-            if target == node_key(node2) do
-              {min_key, min_value} = min_kv(right_child(node2))
-              {new_right, _} = delete_min(right_child(node2))
-              node3 = {:node, node_color(node2), min_key, min_value, left_child(node2), new_right}
-              {fix_up(node3), true}
-            else
-              {new_right, removed?} = delete_node(right_child(node2), target)
-              {fix_up(set_right(node2, new_right)), removed?}
-            end
-        end
+  defp delete_node({:node, _color, key, _value, _left, _right} = node, target) do
+    if target < key do
+      delete_left_branch(node, target)
+    else
+      delete_right_branch(node, target)
     end
+  end
+
+  defp delete_left_branch(node, target) do
+    node1 = prepare_left_delete(node)
+    {new_left, removed?} = delete_node(left_child(node1), target)
+    {fix_up(set_left(node1, new_left)), removed?}
+  end
+
+  defp delete_right_branch(node, target) do
+    node1 = rotate_right_if_left_red(node)
+
+    if target == node_key(node1) and right_child(node1) == nil do
+      {nil, true}
+    else
+      node2 = prepare_right_delete(node1)
+
+      if target == node_key(node2) do
+        {replace_with_successor(node2), true}
+      else
+        {new_right, removed?} = delete_node(right_child(node2), target)
+        {fix_up(set_right(node2, new_right)), removed?}
+      end
+    end
+  end
+
+  defp prepare_left_delete(node) do
+    left = left_child(node)
+
+    if left != nil and not red?(left) and not red?(left_left(left)) do
+      move_red_left(node)
+    else
+      node
+    end
+  end
+
+  defp rotate_right_if_left_red(node) do
+    if red?(left_child(node)) do
+      rotate_right(node)
+    else
+      node
+    end
+  end
+
+  defp prepare_right_delete(node) do
+    right = right_child(node)
+
+    if right != nil and not red?(right) and not red?(left_left(right)) do
+      move_red_right(node)
+    else
+      node
+    end
+  end
+
+  defp replace_with_successor(node) do
+    {min_key, min_value} = min_kv(right_child(node))
+    {new_right, _} = delete_min(right_child(node))
+    updated = {:node, node_color(node), min_key, min_value, left_child(node), new_right}
+    fix_up(updated)
   end
 
   defp delete_min(nil), do: {nil, false}
@@ -223,7 +252,8 @@ defmodule Fplab1.RBDict do
 
   defp delete_min(node) do
     node1 =
-      if left_child(node) != nil and not red?(left_child(node)) and not red?(left_left(left_child(node))) do
+      if left_child(node) != nil and not red?(left_child(node)) and
+           not red?(left_left(left_child(node))) do
         move_red_left(node)
       else
         node
@@ -310,7 +340,9 @@ defmodule Fplab1.RBDict do
   end
 
   defp recolor(nil), do: nil
-  defp recolor({:node, color, key, value, left, right}), do: {:node, flip(color), key, value, left, right}
+
+  defp recolor({:node, color, key, value, left, right}),
+    do: {:node, flip(color), key, value, left, right}
 
   defp flip(:red), do: :black
   defp flip(:black), do: :red

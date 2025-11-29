@@ -57,7 +57,7 @@ defmodule Fplab1.RBDictTest do
 
   describe "properties" do
     test "building from enum matches Map semantics" do
-      check all pairs <- kv_pairs() do
+      check all(pairs <- kv_pairs()) do
         dict = RBDict.from_enum(pairs)
 
         expected =
@@ -71,7 +71,7 @@ defmodule Fplab1.RBDictTest do
     end
 
     test "map mirrors Enum.map over values" do
-      check all pairs <- kv_pairs() do
+      check all(pairs <- kv_pairs()) do
         dict = RBDict.from_enum(pairs)
 
         mapped = RBDict.map(dict, fn _k, v -> v * 2 end)
@@ -87,7 +87,7 @@ defmodule Fplab1.RBDictTest do
     end
 
     test "filter keeps only matching entries" do
-      check all pairs <- kv_pairs() do
+      check all(pairs <- kv_pairs()) do
         dict = RBDict.from_enum(pairs)
         filtered = RBDict.filter(dict, fn k, _v -> rem(k, 2) == 0 end)
 
@@ -104,9 +104,11 @@ defmodule Fplab1.RBDictTest do
     end
 
     test "monoid associativity and identity" do
-      check all list1 <- kv_pairs(),
-                list2 <- kv_pairs(),
-                list3 <- kv_pairs() do
+      check all(
+              list1 <- kv_pairs(),
+              list2 <- kv_pairs(),
+              list3 <- kv_pairs()
+            ) do
         d1 = RBDict.from_enum(list1)
         d2 = RBDict.from_enum(list2)
         d3 = RBDict.from_enum(list3)
@@ -121,7 +123,7 @@ defmodule Fplab1.RBDictTest do
     end
 
     test "foldl behaves like Enum.reduce" do
-      check all pairs <- kv_pairs() do
+      check all(pairs <- kv_pairs()) do
         dict = RBDict.from_enum(pairs)
         list = RBDict.to_list(dict)
 
@@ -135,7 +137,9 @@ defmodule Fplab1.RBDictTest do
   end
 
   defp kv_pairs do
-    pair_gen = StreamData.tuple({StreamData.integer(-1000..1000), StreamData.integer(-1000..1000)})
+    pair_gen =
+      StreamData.tuple({StreamData.integer(-1000..1000), StreamData.integer(-1000..1000)})
+
     StreamData.list_of(pair_gen, max_length: 40)
   end
 end

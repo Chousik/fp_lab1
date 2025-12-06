@@ -94,9 +94,7 @@ defmodule Fplab1.Options do
   defp non_negative_integer(value, _name), do: {:ok, value}
 
   defp format_invalid(invalid) do
-    invalid
-    |> Enum.map(fn {switch, _} -> switch end)
-    |> Enum.join(", ")
+    Enum.map_join(invalid, ", ", fn {switch, _} -> switch end)
   end
 
   defp usage do

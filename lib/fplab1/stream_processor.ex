@@ -19,23 +19,7 @@ defmodule Fplab1.StreamProcessor do
       lines
       |> Stream.with_index(1)
       |> Enum.reduce_while({:ok, initial_state}, fn {line, line_no}, {:ok, state} ->
-        case Input.parse_line(line) do
-          :skip ->
-            {:cont, {:ok, state}}
-
-          {:error, reason} ->
-            {:halt, {:error, "Line #{line_no}: #{reason}"}}
-
-          {:ok, {x, _} = point} ->
-            if valid_order?(state.last_x, x) do
-              case dispatch_point(state, point) do
-                {:ok, new_state} -> {:cont, {:ok, new_state}}
-                {:error, message} -> {:halt, {:error, "Line #{line_no}: #{message}"}}
-              end
-            else
-              {:halt, {:error, "Line #{line_no}: x must be strictly increasing"}}
-            end
-        end
+        process_line(line, line_no, state)
       end)
 
     with {:ok, state} <- result do
@@ -47,25 +31,49 @@ defmodule Fplab1.StreamProcessor do
     Enum.map(configs, fn {module, args} -> {module, module.init(args)} end)
   end
 
+  defp process_line(line, line_no, state) do
+    case Input.parse_line(line) do
+      :skip ->
+        {:cont, {:ok, state}}
+
+      {:error, reason} ->
+        {:halt, {:error, "Line #{line_no}: #{reason}"}}
+
+      {:ok, {x, _} = point} ->
+        handle_point(state, point, line_no, x)
+    end
+  end
+
+  defp handle_point(state, point, line_no, x) do
+    if valid_order?(state.last_x, x) do
+      case dispatch_point(state, point) do
+        {:ok, new_state} -> {:cont, {:ok, new_state}}
+        {:error, message} -> {:halt, {:error, "Line #{line_no}: #{message}"}}
+      end
+    else
+      {:halt, {:error, "Line #{line_no}: x must be strictly increasing"}}
+    end
+  end
+
   defp dispatch_point(state, point) do
-    {algorithms, emit_fun} =
-      state.algorithms
-      |> Enum.map_reduce(state.emit, fn {module, alg_state}, emit_fun ->
+    {entries, updated_algorithms} =
+      Enum.map_reduce(state.algorithms, [], fn {module, alg_state}, acc ->
         {new_state, outputs} = module.consume(alg_state, point)
-        label = module.label(new_state)
-        Enum.each(outputs, fn {x, y} -> emit_fun.(label, x, y) end)
-        {{module, new_state}, emit_fun}
+        {{module.label(new_state), outputs}, [{module, new_state} | acc]}
       end)
 
-    {:ok, %{state | algorithms: algorithms, last_x: elem(point, 0)}}
+    Enum.each(entries, fn {label, outputs} ->
+      Enum.each(outputs, fn {x, y} -> state.emit.(label, x, y) end)
+    end)
+
+    {:ok, %{state | algorithms: Enum.reverse(updated_algorithms), last_x: elem(point, 0)}}
   end
 
   defp finalize(state) do
-    Enum.reduce(state.algorithms, :ok, fn {module, alg_state}, acc ->
+    Enum.each(state.algorithms, fn {module, alg_state} ->
       {new_state, outputs} = module.finalize(alg_state)
       label = module.label(new_state)
       Enum.each(outputs, fn {x, y} -> state.emit.(label, x, y) end)
-      acc
     end)
   end
 
